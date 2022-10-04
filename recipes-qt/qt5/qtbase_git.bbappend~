@@ -1,0 +1,25 @@
+FILESEXTRAPATHS_append := "${THISDIR}/${PN}:"
+
+QT_CONFIG_MANTARAY = "\
+	qml-debug \
+	examples \
+	glib \
+	eglfs \
+	gles2 \
+	sql-sqlite2 \
+	sql-sqlite \
+	fontconfig \
+	linuxfb \
+	widgets \
+	journald \
+	accessibility \
+	gif \
+	ico \
+	libinput \
+	udev \
+"
+
+PACKAGECONFIG_BYMACHINE = "${@bb.utils.contains('MACHINE', 'mantaray', '${QT_CONFIG_MANTARAY}', '', d)}"
+
+PACKAGECONFIG_append = "${PACKAGECONFIG_BYMACHINE}"
+

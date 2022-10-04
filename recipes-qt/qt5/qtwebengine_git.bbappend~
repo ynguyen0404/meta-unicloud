@@ -1,0 +1,1 @@
+PACKAGECONFIG_append ?= " icu ffmpeg webrtc opus zlib proprietary-codecs"
