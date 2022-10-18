@@ -23,3 +23,5 @@ PACKAGECONFIG_BYMACHINE = "${@bb.utils.contains('MACHINE', 'doorphone', '${QT_CO
 
 PACKAGECONFIG:append = "${PACKAGECONFIG_BYMACHINE}"
 
+
+
