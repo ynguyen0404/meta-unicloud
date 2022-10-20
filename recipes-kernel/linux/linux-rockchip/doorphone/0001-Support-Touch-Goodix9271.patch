@@ -1,0 +1,194 @@
+diff --git a/drivers/input/touchscreen/gt9xx/gt9xx.c b/drivers/input/touchscreen/gt9xx/gt9xx.c
+index 6db7e395f82b..43ff4715926a 100644
+--- a/drivers/input/touchscreen/gt9xx/gt9xx.c
++++ b/drivers/input/touchscreen/gt9xx/gt9xx.c
+@@ -60,6 +60,7 @@ static u8 m89or101 = TRUE;
+ static u8 bgt911 = FALSE;
+ static u8 bgt970 = FALSE;
+ static u8 bgt910 = FALSE;
++static u8 bgt9271 = FALSE;
+ static u8 gtp_change_x2y = TRUE;
+ static u8 gtp_x_reverse = FALSE;
+ static u8 gtp_y_reverse = TRUE;
+@@ -314,7 +315,7 @@ s32 gtp_i2c_read_dbl_check(struct i2c_client *client, u16 addr, u8 *rxbuf, int l
+             return SUCCESS;
+         }
+     }    
+-    GTP_ERROR("I2C read 0x%04X, %d bytes, double check failed!", addr, len);
++    printk("I2C read 0x%04X, %d bytes, double check failed! \n", addr, len);
+     return FAIL;
+ }
+ 
+@@ -338,16 +339,16 @@ s32 gtp_send_cfg(struct i2c_client *client)
+ 
+     if (ts->fixed_cfg)
+     {
+-        GTP_INFO("Ic fixed config, no config sent!");
++        printk("=========> goodix, Ic fixed config, no config sent!\n");
+         return 0;
+     }
+     else if (ts->pnl_init_error)
+     {
+-        GTP_INFO("Error occured in init_panel, no config sent");
++        printk("=========> goodix, Error occured in init_panel, no config sent\n");
+         return 0;
+     }
+     
+-    GTP_INFO("Driver send config.");
++    printk("=========> goodix, Driver send config.\n");
+     for (retry = 0; retry < 5; retry++)
+     {
+         ret = gtp_i2c_write(client, config , GTP_CONFIG_MAX_LENGTH + GTP_ADDR_LENGTH);
+@@ -423,13 +424,17 @@ static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
+ 	if (gtp_change_x2y)
+ 		GTP_SWAP(x, y);
+ 
+-	if (!bgt911 && !bgt970) {
++	//if (!bgt911 && !bgt970) {
+ 		if (gtp_x_reverse)
++		{
+ 			x = ts->abs_x_max - x;
++			//printk("==========> goodix, gtp_touch_down: x = %d\n", x);
++		}
+ 
+ 		if (gtp_y_reverse)
+ 			y = ts->abs_y_max - y;
+-	}
++			//printk("==========> goodix, gtp_touch_down: y = %d\n", y);
++	//}
+ 
+ #if GTP_ICS_SLOT_REPORT
+     input_mt_slot(ts->input_dev, id);
+@@ -448,7 +453,7 @@ static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
+     input_mt_sync(ts->input_dev);
+ #endif
+ 
+-    GTP_DEBUG("ID:%d, X:%d, Y:%d, W:%d", id, x, y, w);
++    //printk("==========> goodix, gtp_touch_down: ID:%d, X:%d, Y:%d, W:%d \n", id, x, y, w);
+ }
+ 
+ /*******************************************************
+@@ -544,7 +549,8 @@ static void gtp_pen_down(s32 x, s32 y, s32 w, s32 id)
+     input_report_abs(ts->pen_dev, ABS_MT_TRACKING_ID, id);
+     input_mt_sync(ts->pen_dev);
+ #endif
+-    GTP_DEBUG("(%d)(%d, %d)[%d]", id, x, y, w);
++    //printk("==========> goodix, gtp_pen_down: id = (%d), (x,y) = (%d, %d), w = [%d]\n", id, x, y, w);
++
+ }
+ 
+ static void gtp_pen_up(s32 id)
+@@ -1387,8 +1393,11 @@ static s32 gtp_get_info(struct goodix_ts_data *ts)
+     }
+     ts->int_trigger_type = opr_buf[2] & 0x03;
+     
+-    GTP_INFO("X_MAX = %d, Y_MAX = %d, TRIGGER = 0x%02x",
+-            ts->abs_x_max,ts->abs_y_max,ts->int_trigger_type);
++    //GTP_INFO("X_MAX = %d, Y_MAX = %d, TRIGGER = 0x%02x",
++    //        ts->abs_x_max,ts->abs_y_max,ts->int_trigger_type);
++    
++    //printk("==========> goodix_ts: X_MAX = %d, Y_MAX = %d, TRIGGER = 0x%02x",
++    //        ts->abs_x_max,ts->abs_y_max,ts->int_trigger_type);
+     
+     return SUCCESS;    
+ }
+@@ -1412,22 +1421,26 @@ static s32 gtp_init_panel(struct goodix_ts_data *ts)
+     u8 opr_buf[16] = {0};
+     u8 sensor_id = 0;
+ 
++    u8 cfg_info_group1[] = CTP_CFG_GROUP1;
+     u8 cfg_info_group2[] = CTP_CFG_GROUP2;
+     u8 cfg_info_group3[] = CTP_CFG_GROUP3;
+     u8 cfg_info_group4[] = CTP_CFG_GROUP4;
+     u8 cfg_info_group5[] = CTP_CFG_GROUP5;
+     u8 cfg_info_group6[] = CTP_CFG_GROUP6;
+-    u8 *send_cfg_buf[] = {gtp_dat_10_1, cfg_info_group2, cfg_info_group3,
+-                            cfg_info_group4, cfg_info_group5, cfg_info_group6};
+-    u8 cfg_info_len[] = { CFG_GROUP_LEN(gtp_dat_10_1),
++    //u8 *send_cfg_buf[] = {gtp_dat_10_1, cfg_info_group2,
++    u8 *send_cfg_buf[] = {cfg_info_group1, cfg_info_group2, 
++    				cfg_info_group3, cfg_info_group4,
++    				cfg_info_group5, cfg_info_group6};
++    //u8 cfg_info_len[] = { CFG_GROUP_LEN(gtp_dat_10_1),
++    u8 cfg_info_len[] = { CFG_GROUP_LEN(cfg_info_group1),
+                               CFG_GROUP_LEN(cfg_info_group2),
+                               CFG_GROUP_LEN(cfg_info_group3),
+                               CFG_GROUP_LEN(cfg_info_group4),
+                               CFG_GROUP_LEN(cfg_info_group5),
+-                              CFG_GROUP_LEN(cfg_info_group6)};;
++                              CFG_GROUP_LEN(cfg_info_group6)};
+     
+     GTP_INFO("  <%s>_%d \n", __func__, __LINE__);
+-   
++ /*  
+     if(m89or101){
+ 	    if (ts->cfg_file_num) {
+ 		    send_cfg_buf[0] = gtp_dat_8_9_1;
+@@ -1452,6 +1465,12 @@ static s32 gtp_init_panel(struct goodix_ts_data *ts)
+ 		send_cfg_buf[0] = gtp_dat_7;
+ 		cfg_info_len[0] = CFG_GROUP_LEN(gtp_dat_7);
+ 	}
++*/
++
++	if (bgt9271) {
++		send_cfg_buf[0] = cfg_info_group1;
++		cfg_info_len[0] = CFG_GROUP_LEN(cfg_info_group1);
++	}
+ 
+     GTP_DEBUG_FUNC();
+     GTP_DEBUG("Config Groups\' Lengths: %d, %d, %d, %d, %d, %d", 
+@@ -2598,8 +2617,8 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
+     GTP_DEBUG_FUNC();
+     
+     //do NOT remove these logs
+-    GTP_INFO("GTP Driver Version: %s", GTP_DRIVER_VERSION);
+-    GTP_INFO("GTP I2C Address: 0x%02x", client->addr);
++    printk("==========> goodix_ts_probe: GTP Driver Version: %s", GTP_DRIVER_VERSION);
++    printk("==========> goodix_ts_probe: GTP I2C Address: 0x%02x", client->addr);
+ 
+     i2c_connect_client = client;
+     
+@@ -2657,6 +2676,12 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
+ 		gtp_change_x2y = TRUE;
+ 		gtp_x_reverse = FALSE;
+ 		gtp_y_reverse = TRUE;
++	} else if (val == 9271) {
++		m89or101 = FALSE;
++		bgt9271 = TRUE;
++		gtp_change_x2y = FALSE;
++		gtp_x_reverse = FALSE;
++		gtp_y_reverse = TRUE;
+ 	}
+ 
+ 	ts->tp_regulator = devm_regulator_get(&client->dev, "tp");
+@@ -2679,12 +2704,18 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
+     	dev_err(&client->dev, "no max-x defined\n");
+     	return -EINVAL;
+     }
+-    //ts->abs_x_max = val;
++    ts->abs_x_max = val;
++    
++    printk("==========> goodix_ts_probe: max-x = %d\n", val);
++    
+     if (of_property_read_u32(np, "max-y", &val)) {
+     	dev_err(&client->dev, "no max-y defined\n");
+     	return -EINVAL;
+     }
+-    //ts->abs_y_max = val;
++    ts->abs_y_max = val;
++    
++    printk("==========> goodix_ts_probe: max-y = %d\n", val);
++    
+     if (of_property_read_u32(np, "configfile-num", &val)) {
+ 	    ts->cfg_file_num = 0;
+     } else {
+@@ -2811,6 +2842,9 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
+ #if GTP_ESD_PROTECT
+     gtp_esd_switch(client, SWITCH_ON);
+ #endif
++
++    printk("%s() finished!\n", __func__);
++
+     return 0;
+ 
+ probe_init_error:

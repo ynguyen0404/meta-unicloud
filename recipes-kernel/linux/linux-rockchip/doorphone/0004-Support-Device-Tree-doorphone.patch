@@ -1,0 +1,597 @@
+diff --git a/arch/arm64/boot/dts/rockchip/px30-evb-ddr3-v10-linux.dts b/arch/arm64/boot/dts/rockchip/px30-evb-ddr3-v10-linux.dts
+index aae8807e1858..5b92561d3393 100644
+--- a/arch/arm64/boot/dts/rockchip/px30-evb-ddr3-v10-linux.dts
++++ b/arch/arm64/boot/dts/rockchip/px30-evb-ddr3-v10-linux.dts
+@@ -8,6 +8,7 @@
+ #include <dt-bindings/pinctrl/rockchip.h>
+ #include <dt-bindings/input/input.h>
+ #include <dt-bindings/display/drm_mipi_dsi.h>
++#include <dt-bindings/display/rk_fb.h>
+ #include <dt-bindings/sensor-dev.h>
+ #include "px30.dtsi"
+ #include "px30-linux.dtsi"
+@@ -56,7 +57,7 @@
+ 
+ 	backlight: backlight {
+ 		compatible = "pwm-backlight";
+-		pwms = <&pwm1 0 25000 0>;
++		pwms = <&pwm0 0 25000 0>;
+ 		brightness-levels = <
+ 			  0   1   2   3   4   5   6   7
+ 			  8   9  10  11  12  13  14  15
+@@ -92,6 +93,59 @@
+ 			248 249 250 251 252 253 254 255>;
+ 		default-brightness-level = <200>;
+ 	};
++	
++	panel {
++		compatible = "simple-panel";
++		power-supply = <&vcc3v3_lcd>;
++		backlight = <&backlight>;
++
++		prepare-delay-ms = <20>;
++		//reset-delay-ms = <20>;
++		//init-delay-ms = <20>;
++		enable-delay-ms = <20>;
++		disable-delay-ms = <20>;
++		unprepare-delay-ms = <20>;
++		
++		enable-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
++		reset-gpios = <&gpio3 RK_PA0 GPIO_ACTIVE_LOW>;
++		bus-format = <MEDIA_BUS_FMT_RGB888_1X7X4_SPWG>;
++
++
++        rockchip,data-mapping = "vesa";
++        rockchip,data-width = <24>;
++        rockchip,output = "lvds";
++	status = "okay";
++
++		display-timings {
++			native-mode = <&timing0>;
++			
++			timing0: timing0 {
++				screen-type = <SCREEN_LVDS>;
++				lvds-format = <LVDS_8BIT_1>;
++				out-face    = <OUT_P888>;
++				clock-frequency = <51200000>;
++				hactive = <1024>;
++				vactive = <600>;
++				hback-porch = <90>;
++				hfront-porch = <160>;
++				vback-porch = <13>;
++				vfront-porch = <12>;
++				hsync-len = <70>;
++				vsync-len = <10>;
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <0>;
++				pixelclk-active = <0>;
++			};
++		};
++
++		port {
++			panel_in_lvds: endpoint {
++				remote-endpoint = <&lvds_out_panel>;
++			};
++		};
++	};
++
+ 
+ 	charge-animation {
+ 		compatible = "rockchip,uboot-charge";
+@@ -125,7 +179,7 @@
+ 
+ 	rk_headset {
+ 		compatible = "rockchip_headset";
+-		headset_gpio = <&gpio2 RK_PB0 GPIO_ACTIVE_LOW>;
++		headset_gpio = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&hp_det>;
+ 		io-channels = <&saradc 1>;
+@@ -133,8 +187,8 @@
+ 
+ 	sdio_pwrseq: sdio-pwrseq {
+ 		compatible = "mmc-pwrseq-simple";
+-		/*clocks = <&rk809 1>;*/
+-		/*clock-names = "ext_clock";*/
++		clocks = <&rk809 1>;
++		clock-names = "ext_clock";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&wifi_enable_h>;
+ 
+@@ -165,299 +219,53 @@
+ 
+ 	wireless-wlan {
+ 		compatible = "wlan-platdata";
+-		wifi_chip_type = "AP6210";
++		rockchip,grf = <&grf>;
++		wifi_chip_type = "ap6212";
++		sdio_vref = <1800>;
+ 		WIFI,host_wake_irq = <&gpio0 RK_PB2 GPIO_ACTIVE_HIGH>;
+ 		status = "okay";
+ 	};
+ 
+ 	wireless-bluetooth {
+ 		compatible = "bluetooth-platdata";
+-		clocks = <&rk809 1>;
+-		clock-names = "ext_clock";
++		/*clocks = <&rk809 1>;*/
++		/*clock-names = "ext_clock";*/
+ 		uart_rts_gpios = <&gpio1 RK_PC3 GPIO_ACTIVE_LOW>;
+ 		pinctrl-names = "default","rts_gpio";
+ 		pinctrl-0 = <&uart1_rts>;
+ 		pinctrl-1 = <&uart1_rts_gpio>;
+-		BT,reset_gpio = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
+-		BT,wake_gpio = <&gpio0 RK_PA1 GPIO_ACTIVE_HIGH>;
+-		BT,wake_host_irq = <&gpio0 RK_PB3 GPIO_ACTIVE_HIGH>;
++		BT,power_gpio     = <&gpio2 RK_PB0 GPIO_ACTIVE_HIGH>;   // BT_REG_ON
++		BT,wake_host_irq = <&gpio0 RK_PB3 GPIO_ACTIVE_HIGH>; 	// BT_WAKE_HOST
+ 		status = "okay";
+ 	};
+ };
+ 
+-&display_subsystem {
++&lvds {
+ 	status = "okay";
+-};
+-
+-&dsi {
+-	status = "okay";
+-
+-	panel@0 {
+-		compatible = "simple-panel-dsi";
+-		reg = <0>;
+-		power-supply = <&vcc3v3_lcd>;
+-		backlight = <&backlight>;
+-		prepare-delay-ms = <0>;
+-		reset-delay-ms = <0>;
+-		init-delay-ms = <80>;
+-		enable-delay-ms = <0>;
+-		disable-delay-ms = <10>;
+-		unprepare-delay-ms = <60>;
+-
+-		width-mm = <68>;
+-		height-mm = <121>;
+-
+-		dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |
+-			      MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET)>;
+-		dsi,format = <MIPI_DSI_FMT_RGB888>;
+-		dsi,lanes = <4>;
+-
+-		panel-init-sequence = [
+-			39 00 04 ff 98 81 03
+-			15 00 02 01 00
+-			15 00 02 02 00
+-			15 00 02 03 53
+-			15 00 02 04 53
+-			15 00 02 05 13
+-			15 00 02 06 04
+-			15 00 02 07 02
+-			15 00 02 08 02
+-			15 00 02 09 00
+-			15 00 02 0a 00
+-			15 00 02 0b 00
+-			15 00 02 0c 00
+-			15 00 02 0d 00
+-			15 00 02 0e 00
+-			15 00 02 0f 00
+-
+-			15 00 02 10 00
+-			15 00 02 11 00
+-			15 00 02 12 00
+-			15 00 02 13 00
+-			15 00 02 14 00
+-			15 00 02 15 08
+-			15 00 02 16 10
+-			15 00 02 17 00
+-			15 00 02 18 08
+-			15 00 02 19 00
+-			15 00 02 1a 00
+-			15 00 02 1b 00
+-			15 00 02 1c 00
+-			15 00 02 1d 00
+-			15 00 02 1e c0
+-			15 00 02 1f 80
+-
+-			15 00 02 20 02
+-			15 00 02 21 09
+-			15 00 02 22 00
+-			15 00 02 23 00
+-			15 00 02 24 00
+-			15 00 02 25 00
+-			15 00 02 26 00
+-			15 00 02 27 00
+-			15 00 02 28 55
+-			15 00 02 29 03
+-			15 00 02 2a 00
+-			15 00 02 2b 00
+-			15 00 02 2c 00
+-			15 00 02 2d 00
+-			15 00 02 2e 00
+-			15 00 02 2f 00
+-
+-			15 00 02 30 00
+-			15 00 02 31 00
+-			15 00 02 32 00
+-			15 00 02 33 00
+-			15 00 02 34 04
+-			15 00 02 35 05
+-			15 00 02 36 05
+-			15 00 02 37 00
+-			15 00 02 38 3c
+-			15 00 02 39 35
+-			15 00 02 3a 00
+-			15 00 02 3b 40
+-			15 00 02 3c 00
+-			15 00 02 3d 00
+-			15 00 02 3e 00
+-			15 00 02 3f 00
+-
+-			15 00 02 40 00
+-			15 00 02 41 88
+-			15 00 02 42 00
+-			15 00 02 43 00
+-			15 00 02 44 1f
+-
+-			15 00 02 50 01
+-			15 00 02 51 23
+-			15 00 02 52 45
+-			15 00 02 53 67
+-			15 00 02 54 89
+-			15 00 02 55 ab
+-			15 00 02 56 01
+-			15 00 02 57 23
+-			15 00 02 58 45
+-			15 00 02 59 67
+-			15 00 02 5a 89
+-			15 00 02 5b ab
+-			15 00 02 5c cd
+-			15 00 02 5d ef
+-			15 00 02 5e 03
+-			15 00 02 5f 14
+-
+-			15 00 02 60 15
+-			15 00 02 61 0c
+-			15 00 02 62 0d
+-			15 00 02 63 0e
+-			15 00 02 64 0f
+-			15 00 02 65 10
+-			15 00 02 66 11
+-			15 00 02 67 08
+-			15 00 02 68 02
+-			15 00 02 69 0a
+-			15 00 02 6a 02
+-			15 00 02 6b 02
+-			15 00 02 6c 02
+-			15 00 02 6d 02
+-			15 00 02 6e 02
+-			15 00 02 6f 02
+-
+-			15 00 02 70 02
+-			15 00 02 71 02
+-			15 00 02 72 06
+-			15 00 02 73 02
+-			15 00 02 74 02
+-			15 00 02 75 14
+-			15 00 02 76 15
+-			15 00 02 77 0f
+-			15 00 02 78 0e
+-			15 00 02 79 0d
+-			15 00 02 7a 0c
+-			15 00 02 7b 11
+-			15 00 02 7c 10
+-			15 00 02 7d 06
+-			15 00 02 7e 02
+-			15 00 02 7f 0a
+-
+-			15 00 02 80 02
+-			15 00 02 81 02
+-			15 00 02 82 02
+-			15 00 02 83 02
+-			15 00 02 84 02
+-			15 00 02 85 02
+-			15 00 02 86 02
+-			15 00 02 87 02
+-			15 00 02 88 08
+-			15 00 02 89 02
+-			15 00 02 8a 02
+-
+-			39 00 04 ff 98 81 04
+-			15 00 02 00 80
+-			15 00 02 70 00
+-			15 00 02 71 00
+-			15 00 02 66 fe
+-			15 00 02 82 15
+-			15 00 02 84 15
+-			15 00 02 85 15
+-			15 00 02 3a 24
+-			15 00 02 32 ac
+-			15 00 02 8c 80
+-			15 00 02 3c f5
+-			15 00 02 88 33
+-
+-			39 00 04 ff 98 81 01
+-			15 00 02 22 0a
+-			15 00 02 31 00
+-			15 00 02 53 78
+-			15 00 02 50 5b
+-			15 00 02 51 5b
+-			15 00 02 60 20
+-			15 00 02 61 00
+-			15 00 02 62 0d
+-			15 00 02 63 00
+-
+-			15 00 02 a0 00
+-			15 00 02 a1 10
+-			15 00 02 a2 1c
+-			15 00 02 a3 13
+-			15 00 02 a4 15
+-			15 00 02 a5 26
+-			15 00 02 a6 1a
+-			15 00 02 a7 1d
+-			15 00 02 a8 67
+-			15 00 02 a9 1c
+-			15 00 02 aa 29
+-			15 00 02 ab 5b
+-			15 00 02 ac 26
+-			15 00 02 ad 28
+-			15 00 02 ae 5c
+-			15 00 02 af 30
+-			15 00 02 b0 31
+-			15 00 02 b1 2e
+-			15 00 02 b2 32
+-			15 00 02 b3 00
+-
+-			15 00 02 c0 00
+-			15 00 02 c1 10
+-			15 00 02 c2 1c
+-			15 00 02 c3 13
+-			15 00 02 c4 15
+-			15 00 02 c5 26
+-			15 00 02 c6 1a
+-			15 00 02 c7 1d
+-			15 00 02 c8 67
+-			15 00 02 c9 1c
+-			15 00 02 ca 29
+-			15 00 02 cb 5b
+-			15 00 02 cc 26
+-			15 00 02 cd 28
+-			15 00 02 ce 5c
+-			15 00 02 cf 30
+-			15 00 02 d0 31
+-			15 00 02 d1 2e
+-			15 00 02 d2 32
+-			15 00 02 d3 00
+-			39 00 04 ff 98 81 00
+-			05 00 01 11
+-			05 01 01 29
+-		];
+-
+-		panel-exit-sequence = [
+-			05 00 01 28
+-			05 00 01 10
+-		];
+-
+-		display-timings {
+-			native-mode = <&timing0>;
+-
+-			timing0: timing0 {
+-				clock-frequency = <64000000>;
+-				hactive = <720>;
+-				vactive = <1280>;
+-				hfront-porch = <40>;
+-				hsync-len = <10>;
+-				hback-porch = <40>;
+-				vfront-porch = <22>;
+-				vsync-len = <4>;
+-				vback-porch = <11>;
+-				hsync-active = <0>;
+-				vsync-active = <0>;
+-				de-active = <0>;
+-				pixelclk-active = <0>;
++	ports {
++		port@1 {
++			reg = <1>;
++			lvds_out_panel: endpoint {
++				remote-endpoint = <&panel_in_lvds>;
+ 			};
+ 		};
+ 	};
+ };
+ 
+-&dsi_in_vopb {
++&lvds_in_vopb {
+ 	status = "okay";
+ };
+ 
+-&dsi_in_vopl {
++&lvds_in_vopl {
+ 	status = "disabled";
+ };
+ 
+-&route_dsi {
+-	connect = <&vopb_out_dsi>;
++&route_lvds {
++	connect = <&vopb_out_lvds>;
++	status = "okay";
++};
++
++&display_subsystem {
+ 	status = "okay";
+ };
+ 
+@@ -775,9 +583,34 @@
+ 
+ &i2c1 {
+ 	status = "okay";
++	
++	gt9xx: gt9xx@14 {
++		status = "okay";
++		compatible = "goodix,gt9xx";
++		reg = <0x14>;
++		tp-supply = <&vcc2v8_dvp>;
++		touch-gpio = <&gpio0 RK_PA5 IRQ_TYPE_LEVEL_LOW>;
++		reset-gpio = <&gpio0 RK_PB4 GPIO_ACTIVE_HIGH>;
++		max-x = <1024>;
++		max-y = <600>;
++		tp-size = <9271>;
++	};
++/*	
++	gt9xx: gt9xx@14 {
++		compatible = "goodix,gt9xx";
++		reg = <0x14>;
++		touch-gpio = <&gpio0 12 IRQ_TYPE_LEVEL_LOW>;
++		reset-gpio = <&gpio0 11 GPIO_ACTIVE_HIGH>;
++		max-x = <1200>;
++		max-y = <1900>;
++		tp-size = <911>;
++		tp-supply = <&vcc_tp>;
++		status = "okay";
++	};
++*/	
+ 
+ 	sensor@f {
+-		status = "okay";
++		status = "disabled";
+ 		compatible = "ak8963";
+ 		reg = <0x0f>;
+ 		type = <SENSOR_TYPE_COMPASS>;
+@@ -788,15 +621,16 @@
+ 	};
+ 
+ 	gt1x: gt1x@14 {
++		status = "disabled";
+ 		compatible = "goodix,gt1x";
+ 		reg = <0x14>;
+-		power-supply = <&vcc3v3_lcd>;
+-		goodix,rst-gpio = <&gpio0 RK_PB4 GPIO_ACTIVE_HIGH>;
+-		goodix,irq-gpio = <&gpio0 RK_PA5 IRQ_TYPE_LEVEL_LOW>;
++		//power-supply = <&vcc3v3_lcd>;
++		//goodix,rst-gpio = <&gpio0 RK_PB4 GPIO_ACTIVE_HIGH>;
++		//goodix,irq-gpio = <&gpio0 RK_PA5 IRQ_TYPE_LEVEL_LOW>;
+ 	};
+ 
+ 	sensor@4c {
+-		status = "okay";
++		status = "disabled";
+ 		compatible = "gs_mma7660";
+ 		reg = <0x4c>;
+ 		type = <SENSOR_TYPE_ACCEL>;
+@@ -818,6 +652,7 @@
+ 	i2c-scl-rising-time-ns = <300>;
+ 
+ 	ov5695: ov5695@36 {
++		status = "disabled";
+ 		compatible = "ovti,ov5695";
+ 		reg = <0x36>;
+ 		clocks = <&cru SCLK_CIF_OUT>;
+@@ -828,7 +663,7 @@
+ 		dvdd-supply = <&vdd1v5_dvp>;
+ 
+ 		/*reset-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;*/
+-		pwdn-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;
++		//pwdn-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&cif_clkout_m0>;
+ 		rockchip,camera-module-index = <0>;
+@@ -906,7 +741,7 @@
+ 	pmuio2-supply = <&vcc3v0_pmu>;
+ };
+ 
+-&pwm1 {
++&pwm0 {
+ 	status = "okay";
+ };
+ 
+@@ -933,6 +768,7 @@
+ 	rockchip,sleep-debug-en = <1>;
+ };
+ 
++
+ &saradc {
+ 	status = "okay";
+ 	vref-supply = <&vcc1v8_soc>;
+@@ -955,6 +791,7 @@
+ 	status = "okay";
+ };
+ 
++/*
+ &sdio {
+ 	bus-width = <4>;
+ 	cap-sd-highspeed;
+@@ -966,9 +803,27 @@
+ 	sd-uhs-sdr104;
+ 	status = "okay";
+ };
++*/
++
++&sdio {
++    status = "okay";
++    clock-frequency = <50000000>;
++    clock-freq-min-max = <200000 50000000>;
++    bus-width = <4>;
++    cap-sd-highspeed;
++    cap-sdio-irq;
++    disable-wp;
++    keep-power-in-suspend;
++    mmc-pwrseq = <&sdio_pwrseq>;
++    non-removable;
++    num-slots = <1>;
++    pinctrl-names = "default";
++    sd-uhs-sdr104;
++    supports-sdio;
++};
+ 
+ &tsadc {
+-	pinctrl-names = "gpio", "otpout";
++	pinctrl-names = "init", "default";
+ 	pinctrl-0 = <&tsadc_otp_gpio>;
+ 	pinctrl-1 = <&tsadc_otp_out>;
+ 	status = "okay";
+@@ -976,10 +831,15 @@
+ 
+ &uart1 {
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&uart1_xfer &uart1_cts>;
++	//pinctrl-0 = <&uart1_xfer &uart1_cts>;
++	pinctrl-0 = <&uart1_xfer>;
+ 	status = "okay";
+ };
+ 
++&uart3 {
++	status = "disabled";
++};
++
+ &u2phy {
+ 	status = "okay";
+ 
+@@ -1025,6 +885,11 @@
+ };
+ 
+ &pinctrl {
++
++	/*Y add*/
++	pinctrl-names = "default";
++	pinctrl-0 = <&chip_enable_h &wifi_wake_host >;
++
+ 	headphone {
+ 		hp_det: hp-det {
+ 			rockchip,pins = <2 RK_PB0 RK_FUNC_GPIO &pcfg_pull_down>;
+@@ -1057,6 +922,17 @@
+ 		wifi_enable_h: wifi-enable-h {
+ 			rockchip,pins = <0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
+ 		};
++		chip_enable_h: chip-enable-h {
++		    	rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_output_high>;
++		};
++	};
++	
++	/*Y add*/
++	wireless-wlan {
++		wifi_wake_host: wifi-wake-host {
++			//rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_up>;
++			rockchip,pins = <0 RK_PB2 0 &pcfg_pull_down>;
++		};
+ 	};
+ };
+ 
