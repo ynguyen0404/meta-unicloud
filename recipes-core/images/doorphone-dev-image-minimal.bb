@@ -13,7 +13,7 @@ TOOLCHAIN_HOST_TASK:remove:task-populate-sdk-ext = " nativesdk-intltool nativesd
 
 
 # Support build SDK
-# inherit populate_sdk_qt5
+inherit populate_sdk_qt5
 
 # Expand rootfs space
 IMAGE_ROOTFS_EXTRA_SPACE:append = " + 512000"
@@ -34,7 +34,7 @@ TTF_TOOLS = "ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-sans-condensed ttf-dej
 NETWORK_TOOLS = "networkmanager networkmanager-nmcli networkmanager-bash-completion networkmanager-openvpn iptraf tcpdump ethtool"
 
 # RTL WIFI BT Firmware and Tool
-# RTL_FIRMWARE = "rkwifibt-firmware-ap6212a1-wifi rkwifibt-firmware-ap6212a1-bt brcm-tools"
+RTL_FIRMWARE = "rkwifibt-firmware-ap6212a1-wifi rkwifibt-firmware-ap6212a1-bt brcm-tools"
 
 #QT5
 QT_SUPPORT = "packagegroup-qt5-doorphone qt5everywheredemo cinematicexperience"
@@ -55,12 +55,11 @@ FEH_IMG = "feh"
 V4L2_UTILS = "v4l-utils ffmpeg gdb"
 
 #Gstreamer
-GSTREAMER_SP = "gstreamer1.0 gstreamer1.0-plugins-bad gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-rockchip rockchip-mpp xserver-xorg rockchip-librga rockchip-rkisp vlc"
+GSTREAMER_SP = "gstreamer1.0 gstreamer1.0-plugins-bad gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-rockchip rockchip-mpp xserver-xorg rockchip-librga rockchip-rkisp vlc v4l-rkmpp sox"
 
 #Support Firefox, Chromium
 #FIREFOX_SP = "firefox"
 #CHROMIUM_SP = "chromium-x11"
 #IMAGE_INSTALL:append = " ${CHROMIUM_SP}"
 
-IMAGE_INSTALL += "${I2C_TOOLS_SUPPORT} ${TIME_ZONE_SUPPORT} ${UTILS_TOOLS} ${TTF_TOOLS} ${NETWORK_TOOLS} ${FEH_IMG} ${V4L2_UTILS} ${GSTREAMER_SP} ${X11_SP}" 
-#${QT_SUPPORT}
+IMAGE_INSTALL += "${I2C_TOOLS_SUPPORT} ${TIME_ZONE_SUPPORT} ${UTILS_TOOLS} ${TTF_TOOLS} ${NETWORK_TOOLS} ${FEH_IMG} ${V4L2_UTILS} ${GSTREAMER_SP} ${X11_SP} ${RTL_FIRMWARE} ${QT_SUPPORT}"

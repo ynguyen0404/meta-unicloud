@@ -1,7 +1,6 @@
 FILESEXTRAPATHS:append := ":${THISDIR}/${PN}:"
 
 SRC_URI_DOORPHONE = "								\
-		file://defconfig						\
 		file://0001-Support-Touch-Goodix9271.patch 			\
 		file://0002-Support-Touch-Goodix9271.patch 			\
 		file://0003-Support-Device-Tree-doorphone.patch			\
